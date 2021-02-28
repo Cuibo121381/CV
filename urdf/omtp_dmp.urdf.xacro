@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<robot name="omtp" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ==================================================== -->
+  <!-- INITIAL SETUP OF WORLD LINK                          -->
+  <!-- ==================================================== -->
+  <!-- world -->
+  <link name="world" />
+
+  <!-- ==================================================== -->
+  <!-- Panda robot setup                                    -->
+  <!-- ==================================================== -->
+  <!-- Panda parameters -->
+  <xacro:arg name="arm_id" default="panda"/>
+  <xacro:arg name="use_cylinder_collision_model" default="true"/>
+  <xacro:arg name="use_gazebo_sim" default="true"/>
+  <xacro:arg name="parent" default="world"/>
+
+  <!-- Insert Panda robot -->
+  <xacro:include filename="$(find franka_description)/robots/panda_arm_hand.urdf.xacro"/>
+
+</robot>

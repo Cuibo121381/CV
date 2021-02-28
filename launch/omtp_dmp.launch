@@ -1,0 +1,70 @@
+<launch>
+  <!-- ==================================================== -->
+  <!--
+  By default, hide joint_state_publisher's GUI. The joint_state_publisher
+  maintains and publishes the current joint configuration of the simulated robot.
+  It also provides a GUI to move the simulated robot around "manually".
+  -->
+  <!-- ==================================================== -->
+  <arg name="use_gui" default="false" />
+
+  <!-- ==================================================== -->
+  <!-- Gazebo specific options                              -->
+  <!-- ==================================================== -->
+  <arg name="gazebo_gui" default="true"/>
+  <arg name="paused" default="true"/>
+
+  <!-- ==================================================== -->
+  <!-- Launch Gazebo with a world                           -->
+  <!-- ==================================================== -->
+  <!-- Startup simulated world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find omtp_lecture3)/worlds/box_world.world"/>
+    <!-- <arg name="world_name" default="worlds/empty.world"/> -->
+    <arg name="verbose" value="true"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="gui" value="$(arg gazebo_gui)"/>
+  </include>
+
+  <!-- ==================================================== -->
+  <!-- Send robot urdf to param server                      -->
+  <!-- ==================================================== -->
+  <param name="robot_description"
+    command="$(find xacro)/xacro '$(find omtp_lecture3)/urdf/omtp_dmp.urdf.xacro'
+    use_cylinder_collision_model:=false use_gazebo_sim:=true"/>
+
+  <!-- ==================================================== -->
+  <!-- Spawn robot in Gazebo                                -->
+  <!-- ==================================================== -->
+  <!-- Push robot_description to factory and spawn robot in gazebo at the origin, change x,y,z arguments to spawn in a different position -->
+  <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model panda -x 0 -y 0 -z 0
+              -J panda_joint4 -0.07 -J panda_joint6 0.51 -unpause"
+    respawn="false" output="screen" />
+
+  <!-- ==================================================== -->
+  <!-- Load joint controllers                                     -->
+  <!-- ==================================================== -->
+  <!-- Load joint controller configurations from YAML file to parameter server -->
+  <rosparam file="$(find omtp_lecture3)/config/ros_controllers.yaml" command="load"/>
+
+  <!-- Load the controllers -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" args="joint_state_controller panda_hand_controller panda_arm_controller"/>
+
+  <!-- ==================================================== -->
+  <!-- joint_state_publisher                                -->
+  <!-- ==================================================== -->
+  <!-- We do not have a robot connected, so publish fake joint states -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="$(arg use_gui)"/>
+    <rosparam param="source_list">[/joint_states]</rosparam>
+  </node>
+  <node name="joint_state_desired_publisher" pkg="topic_tools" type="relay" args="joint_states joint_states_desired" />
+
+  <!-- ==================================================== -->
+  <!-- robot_state_publisher                                -->
+  <!-- ==================================================== -->
+  <!-- Given the published joint states, publish tf for the robot links -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+
+</launch>
